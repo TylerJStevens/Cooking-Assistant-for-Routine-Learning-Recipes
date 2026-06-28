@@ -1,0 +1,131 @@
+//Varible delarations//
+#define recipe1 2
+#define recipe2 3
+#define recipe3 4
+#define recipe4 5
+
+#define backward 6
+#define forward 7
+#define reset 8
+#define powerOff 9
+#define canOpener A0
+#define knife A1
+#define tongs A2
+#define spoon A3
+#define spatula A4
+#define ghost A5
+int recipeSelector = 0;
+//Recipe class
+class Recipe{
+  //list of numbers corresponding to the tool lights
+  //used to light up the LEDs in order
+  public:byte instructionList[6][5];
+  //step used to navigate through instructionList
+  public:int step = 0;
+  bool firstLoop = true;
+  int max;
+  void stepLight(int lowHigh){
+    for(int i = 0; i < sizeof(instructionList[step])/sizeof(byte); i++){
+      if(lowHigh == 0){
+          digitalWrite(instructionList[step][i], LOW);
+        }
+        else{
+          digitalWrite(instructionList[step][i], HIGH);
+        }
+      }
+  }
+  void nextStep(){
+    if(step == 0 && firstLoop == true){
+      stepLight(1);
+      firstLoop = false;
+    }
+    else if(step != max - 1){
+      stepLight(0);
+      step++;
+      stepLight(1);
+    }
+  }
+  void prevStep(){
+    if(step != 0){
+      stepLight(0);
+      step--;
+      stepLight(1);
+    }
+  }
+  void resetStep(){
+    stepLight(0);
+    step = 0;
+    stepLight(1);
+  }
+  void stop(){
+    stepLight(0);
+    step = 0;
+    firstLoop = true;
+  }
+};
+
+bool looper = true;
+bool wasLow = false;
+Recipe burito;
+Recipe recipeList[9];
+
+void setup() {
+// Buttons //
+pinMode(backward, INPUT_PULLUP);
+pinMode(forward, INPUT_PULLUP);
+pinMode(reset, INPUT_PULLUP);
+pinMode(powerOff, INPUT_PULLUP);
+
+pinMode(recipe1, INPUT_PULLUP);
+pinMode(recipe2, INPUT_PULLUP);
+pinMode(recipe3, INPUT_PULLUP);
+pinMode(recipe4, INPUT_PULLUP);
+
+//Leds//
+pinMode(canOpener, OUTPUT);
+pinMode(knife, OUTPUT);
+pinMode(tongs, OUTPUT);
+pinMode(spoon, OUTPUT);
+pinMode(spatula, OUTPUT);
+pinMode(ghost, OUTPUT);
+//pinMode(led5, OUTPUT);
+//setting up the burito recipe
+burito.max = 6;
+burito.instructionList[0][0] = canOpener;
+burito.instructionList[1][0] = knife;
+burito.instructionList[2][0] = spatula;
+burito.instructionList[3][0] = spatula;
+burito.instructionList[3][1] = spoon;
+burito.instructionList[4][0] = ghost;
+burito.instructionList[5][0] = tongs;
+recipeList[0] = burito;
+}
+
+void loop() {
+  if(looper){
+    if(digitalRead(forward) == LOW && !wasLow){
+      recipeList[recipeSelector].nextStep();
+      wasLow = true;
+    }
+    if(digitalRead(backward) == LOW && !wasLow){
+      recipeList[recipeSelector].prevStep();
+      wasLow = true;
+    }
+    if(digitalRead(reset) == LOW && !wasLow){
+      recipeList[recipeSelector].resetStep();
+      wasLow = true;
+    }
+    if(digitalRead(powerOff) == LOW && !wasLow){
+      recipeList[recipeSelector].stop();
+      looper = false;
+    }
+    if(digitalRead(backward) == HIGH && digitalRead(forward) == HIGH && digitalRead(reset) == HIGH){
+      wasLow = false;
+    }
+  }
+  if(!looper){
+    if(digitalRead(powerOff) == LOW && !wasLow){
+      looper = true;
+    }
+  }
+}
